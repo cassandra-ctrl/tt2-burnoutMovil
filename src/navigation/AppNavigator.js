@@ -108,10 +108,10 @@ function MainStack() {
 // NAVEGADOR PRINCIPAL
 
 export default function AppNavigator() {
-  const { cargando, estaLogueado } = useAuth();
+  const { cargandoInicial, estaLogueado } = useAuth();
 
   // Mostrar loading mientras verifica sesión
-  if (cargando) {
+  if (cargandoInicial) {
     return <Loading message="Cargando..." />;
   }
 

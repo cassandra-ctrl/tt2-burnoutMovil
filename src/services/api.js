@@ -4,12 +4,15 @@
 // ============================================================================
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { Platform } from "react-native";
 // Cambia esta URL por la IP de tu computadora cuando pruebes en tu celular
 // Para emulador Android: 10.0.2.2
 // Para tu celular: usa la IP de tu computadora (ej: 192.168.1.100)
 // Para navegador web: localhost
-const API_URL = "http://localhost:3000/api";
+const API_URL =
+  Platform.OS === "web"
+    ? "http://localhost:3000/api"
+    : "http://192.168.1.2:3000/api";
 
 // ============================================================================
 // FUNCIÓN BASE PARA PETICIONES
@@ -38,7 +41,9 @@ async function request(endpoint, options = {}) {
     if (!response.ok) {
       throw {
         status: response.status,
-        message: data.message || data.error || "Error en la petición",
+        // Agregamos data.mensaje por si tu backend responde en español
+        message:
+          data.mensaje || data.message || data.error || "Error en la petición",
         data,
       };
     }

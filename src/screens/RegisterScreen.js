@@ -12,10 +12,11 @@ import {
   ScrollView,
   Alert,
   Image,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
-import { Button, Input, ModalAlert } from "../components";
+import { Button, Input } from "../components";
 import { colors, fonts, spacing } from "../utils/theme";
 
 export default function RegisterScreen({ navigation }) {
@@ -28,13 +29,7 @@ export default function RegisterScreen({ navigation }) {
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [errores, setErrores] = useState({});
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    titulo: "",
-    mensaje: "",
-    tipo: "warning",
-  });
+  const [errorBackend, setErrorBackend] = useState("");
 
   // Hook de autenticación
   const { register, cargando } = useAuth();
@@ -43,7 +38,7 @@ export default function RegisterScreen({ navigation }) {
 
   const validarFormulario = () => {
     const nuevosErrores = {};
-
+    setErrorBackend("");
     // Validar nombre
     if (!nombre.trim()) {
       nuevosErrores.nombre = "El nombre es requerido";
@@ -64,8 +59,8 @@ export default function RegisterScreen({ navigation }) {
     // Validar matrícula
     if (!matricula.trim()) {
       nuevosErrores.matricula = "La matrícula es requerida";
-    } else if (matricula.length < 8) {
-      nuevosErrores.matricula = "La matrícula debe tener al menos 8 caracteres";
+    } else if (matricula.length != 10) {
+      nuevosErrores.matricula = "La matrícula debe tener 10 dígitos";
     }
 
     // Validar contraseña
@@ -74,8 +69,11 @@ export default function RegisterScreen({ navigation }) {
     } else if (contrasena.length < 8) {
       nuevosErrores.contrasena =
         "La contraseña debe tener al menos 8 caracteres";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(contrasena)) {
-      nuevosErrores.contrasena = "Debe incluir mayúscula, minúscula y número";
+    } else if (
+      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?])/.test(contrasena)
+    ) {
+      nuevosErrores.contrasena =
+        "Debe incluir al menos unas mayúscula, una minúscula, un número y un símbolo";
     }
 
     // Validar confirmar contraseña
@@ -93,6 +91,9 @@ export default function RegisterScreen({ navigation }) {
   const handleRegistro = async () => {
     if (!validarFormulario()) return;
 
+    Keyboard.dismiss(); // Ocultamos el teclado por comodidad
+    setErrorBackend(""); // Limpiamos errores previos
+
     const datos = {
       nombre: nombre.trim(),
       paterno: paterno.trim(),
@@ -105,21 +106,19 @@ export default function RegisterScreen({ navigation }) {
     const resultado = await register(datos);
 
     if (resultado.success) {
-      setModalConfig({
-        titulo: "Registro exitoso",
-        mensaje: "Tu cuenta ha sido creada correctamente",
-        tipo: "success",
-      });
-      setModalVisible(true);
+      // Como tu AuthContext redirige automáticamente,
+      // solo ponemos una alerta nativa sencilla por si acaso.
+      if (Platform.OS === "web") {
+        window.alert("¡Registro exitoso!");
+      } else {
+        Alert.alert("Éxito", "Tu cuenta ha sido creada correctamente.");
+      }
     } else {
-      setModalConfig({
-        titulo: "Error al registrar",
-        mensaje: resultado.error || "No se pudo crear la cuenta.",
-        tipo: "error",
-      });
-      setModalVisible(true);
+      // AQUÍ GUARDAMOS EL ERROR PARA MOSTRARLO EN EL FORMULARIO
+      setErrorBackend(resultado.error || "No se pudo crear la cuenta.");
     }
   };
+
   // Render
 
   return (
@@ -220,6 +219,12 @@ export default function RegisterScreen({ navigation }) {
               La contraseña debe incluir mayúscula, minúscula y número
             </Text>
 
+            {errorBackend ? (
+              <View style={styles.errorBackendContainer}>
+                <Text style={styles.errorBackendText}>{errorBackend}</Text>
+              </View>
+            ) : null}
+
             {/* Botón de registro */}
             <Button
               title="Crear Cuenta"
@@ -238,17 +243,6 @@ export default function RegisterScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <ModalAlert
-        visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          // Si fue exitoso, el AuthContext ya redirige automáticamente
-        }}
-        titulo={modalConfig.titulo}
-        mensaje={modalConfig.mensaje}
-        tipo={modalConfig.tipo}
-      />
     </SafeAreaView>
   );
 }
@@ -317,5 +311,19 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: fonts.sizes.md,
     fontWeight: "600",
+  },
+  errorBackendContainer: {
+    backgroundColor: "#FFEBEE",
+    padding: spacing.md,
+    borderRadius: 8,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+  },
+  errorBackendText: {
+    color: "#F44336",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: fonts.sizes.sm,
   },
 });

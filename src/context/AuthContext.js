@@ -18,7 +18,8 @@ const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(false);
+  const [cargandoInicial, setCargandoInicial] = useState(true);
   const [error, setError] = useState(null);
 
   // -------------------------------------------------------------------------
@@ -49,7 +50,7 @@ export function AuthProvider({ children }) {
       console.log("Error verificando sesión:", err);
       setUsuario(null);
     } finally {
-      setCargando(false);
+      setCargandoInicial(false);
     }
   };
 
@@ -83,13 +84,21 @@ export function AuthProvider({ children }) {
       setCargando(true);
 
       const data = await authAPI.register(datos);
+
       const user = data.usuario || data.user;
       setUsuario(user);
 
       return { success: true, data };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      // err.message es el texto que extrajimos en api.js
+      // err.data contiene el JSON completo del backend por si lo necesitas
+      const mensajeError =
+        err.message || "Error inesperado al registrar la cuenta.";
+
+      setError(mensajeError);
+
+      // Retornamos el objeto exacto que espera tu RegisterScreen
+      return { success: false, error: mensajeError };
     } finally {
       setCargando(false);
     }
@@ -134,6 +143,7 @@ export function AuthProvider({ children }) {
   const value = {
     usuario,
     cargando,
+    cargandoInicial,
     error,
     estaLogueado: !!usuario,
     login,
